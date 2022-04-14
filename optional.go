@@ -23,8 +23,11 @@ package optional
 
 import (
 	"database/sql/driver"
+	"encoding"
 	"encoding/json"
 	"fmt"
+
+	"github.com/gocarina/gocsv"
 )
 
 // Optional holds a Wrappe and a flag indicating the existence or abscence of the Wrapee.
@@ -98,7 +101,7 @@ func (optional *Optional[T]) UnmarshalJSON(input []byte) error {
 
 }
 
-// Scan implements the database.sql.Scanner interface
+// Scan implements the database.sql.Scanner interface.
 func (optional *Optional[T]) Scan(value any) error {
 	if value == nil {
 		var zero T
@@ -120,7 +123,7 @@ func (optional *Optional[T]) Scan(value any) error {
 	return fmt.Errorf("Failed to scan value of type %T into optional of type %T", value, optional.Wrappee)
 }
 
-// Value implements the database.sql.driver.Valuer interface
+// Value implements the database.sql.driver.Valuer interface.
 func (optional Optional[T]) Value() (driver.Value, error) {
 	if !optional.HasValue {
 		return nil, nil
@@ -133,11 +136,84 @@ func (optional Optional[T]) Value() (driver.Value, error) {
 	return nil, nil
 }
 
-// String implements the fmt.Stringer interface
+// String implements the fmt.Stringer interface.
 func (optional Optional[T]) String() string {
 	if optional.HasValue {
 		return fmt.Sprint(optional.Wrappee)
 	}
 
 	return "empty optional"
+}
+
+// MarshalText implements the encoding.TextMarshaller interface.
+func (optional *Optional[T]) MarshalText() (text []byte, err error) {
+	if !optional.HasValue {
+		return []byte{}, nil
+	}
+
+	textMarshaler, ok := any(optional.Wrappee).(encoding.TextMarshaler)
+	if !ok {
+		return []byte{}, fmt.Errorf("Failed to marshal value of type %T, TextMarshaler interface not supported", optional.Wrappee)
+	}
+
+	return textMarshaler.MarshalText()
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaller interface.
+func (optional *Optional[T]) UnmarshalText(text []byte) error {
+	textUnarshaler, ok := any(optional.Wrappee).(encoding.TextUnmarshaler)
+	if !ok {
+		return fmt.Errorf(`Failed to unmarshal value "%v" into optional of type %T, wrappee does not support TextUnmarshaler interface`, text, optional.Wrappee)
+	}
+
+	return textUnarshaler.UnmarshalText(text)
+}
+
+// UnmarshalCSV implements the gocarina/gocsv.TypeUnmarshaller interface.
+func (optional *Optional[T]) UnmarshalCSV(val string) error {
+	if val == "" {
+		optional.HasValue = false
+
+		return nil
+	}
+
+	// Dirty Hack
+	var temp []struct{ Foo T }
+
+	err := gocsv.UnmarshalString("Foo\n"+val, &temp)
+	if err != nil {
+		return err
+	}
+
+	optional.Push(temp[0].Foo)
+
+	return nil
+}
+
+// MarshalCSV implements the gocarina/gocsv.TypeMarshaller interface.
+func (optional Optional[T]) MarshalCSV() (string, error) {
+	// csvMarshaler, ok := any(optional.Wrappee).(gocsv.TypeMarshaller)
+	// if !ok {
+	// 	return "", fmt.Errorf(`Failed to marshal value of type %T, wrappee does not support TypeMarshaller interface`, optional.Wrappee)
+	// }
+
+	// return csvMarshaler.MarshalCSV()
+
+	// Dirty Hack
+	if !optional.HasValue {
+		return "", nil
+	}
+
+	temp := []struct{ Foo T }{{optional.Wrappee}}
+
+	out, err := gocsv.MarshalString(temp)
+	if err != nil {
+		return "", err
+	}
+
+	// If it's ghetto and it works, it is not ghetto.
+	out = out[4:]
+	out = out[:len(out)-1]
+
+	return out, err
 }

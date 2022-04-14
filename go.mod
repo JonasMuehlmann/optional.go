@@ -3,6 +3,7 @@ module github.com/JonasMuehlmann/optional.go
 go 1.18
 
 require (
+	github.com/gocarina/gocsv v0.0.0-20220310154401-d4df709ca055
 	github.com/mattn/go-sqlite3 v1.14.8
 	github.com/stretchr/testify v1.7.1
 )

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/JonasMuehlmann/optional.go"
+	"github.com/gocarina/gocsv"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 )
@@ -111,4 +112,82 @@ func TestSQLScanAndValueHasNoValue(t *testing.T) {
 	assert.NoError(t, err)
 	// If HasValue is false, we don't care about the Wrappee
 	assert.Equal(t, input.HasValue, output.HasValue)
+}
+
+//******************************************************************//
+// gocarina/gocsv.TypeUnmarshaller and gocarina/gocsv.TypeMarshaller//
+//******************************************************************//
+func TestCSVUnmarshalHasValue(t *testing.T) {
+	inputCSV := `Foo,Bar
+1,2
+`
+	outputStructs := []struct {
+		Foo optional.Optional[int] `csv:"Foo"`
+		Bar optional.Optional[int] `csv:"Bar"`
+	}{}
+
+	err := gocsv.UnmarshalString(inputCSV, &outputStructs)
+	assert.NoError(t, err)
+	assert.Len(t, outputStructs, 1)
+
+	assert.True(t, outputStructs[0].Foo.HasValue)
+	assert.True(t, outputStructs[0].Bar.HasValue)
+
+	assert.Equal(t, 1, outputStructs[0].Foo.Wrappee)
+	assert.Equal(t, 2, outputStructs[0].Bar.Wrappee)
+}
+
+func TestCSVUnmarshalHasNoValue(t *testing.T) {
+	inputCSV := `Foo,Bar
+,
+`
+	outputStructs := []struct {
+		Foo optional.Optional[int] `csv:"Foo"`
+		Bar optional.Optional[int] `csv:"Bar"`
+	}{}
+
+	err := gocsv.UnmarshalString(inputCSV, &outputStructs)
+	assert.NoError(t, err)
+	assert.Len(t, outputStructs, 1)
+
+	assert.False(t, outputStructs[0].Foo.HasValue)
+	assert.False(t, outputStructs[0].Bar.HasValue)
+}
+
+func TestCSVMarshalHasValue(t *testing.T) {
+	outputCSV := `Foo,Bar
+1,2
+`
+	inputStruct := []struct {
+		Foo optional.Optional[int] `csv:"Foo"`
+		Bar optional.Optional[int] `csv:"Bar"`
+	}{
+		{
+			Foo: optional.Make(1),
+			Bar: optional.Make(2),
+		},
+	}
+
+	out, err := gocsv.MarshalString(inputStruct)
+	assert.NoError(t, err)
+	assert.Equal(t, outputCSV, out)
+}
+
+func TestCSVMarshalHasNoValue(t *testing.T) {
+	outputCSV := `Foo,Bar
+,
+`
+	inputStruct := []struct {
+		Foo optional.Optional[int] `csv:"Foo"`
+		Bar optional.Optional[int] `csv:"Bar"`
+	}{
+		{
+			Foo: optional.Optional[int]{},
+			Bar: optional.Optional[int]{},
+		},
+	}
+
+	out, err := gocsv.MarshalString(inputStruct)
+	assert.NoError(t, err)
+	assert.Equal(t, outputCSV, out)
 }

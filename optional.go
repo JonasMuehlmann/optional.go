@@ -33,6 +33,11 @@ type Optional[T any] struct {
 	HasValue bool `json:"has_value" db:"has_value"`
 }
 
+// Make creates an optional holding the specified wrappee and sets the HasValue flag to true.
+func Make[T any](wrappee T) Optional[T] {
+	return Optional[T]{Wrappee: wrappee, HasValue: true}
+}
+
 // ValueOr returns the Wrapee if the HasValue flag is true, otherwise alternative is returned.
 func (optional Optional[T]) ValueOr(alternative T) T {
 	if optional.HasValue {

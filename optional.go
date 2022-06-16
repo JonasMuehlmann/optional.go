@@ -50,8 +50,8 @@ func (optional Optional[T]) ValueOr(alternative T) T {
 	return alternative
 }
 
-// OrElse returns the Wrapee if the HasValue flag is true, otherwise the result of alternative() is returned.
-func (optional Optional[T]) OrElse(alternative func() T) T {
+// ValueOrFrom returns the Wrapee if the HasValue flag is true, otherwise the result of alternative() is returned.
+func (optional Optional[T]) ValueOrFrom(alternative func() T) T {
 	if optional.HasValue {
 		return optional.Wrappee
 	}

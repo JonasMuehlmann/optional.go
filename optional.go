@@ -68,6 +68,15 @@ func (optional Optional[T]) ValueOrCallback(callback func()) Optional[T] {
 	return optional
 }
 
+// AndTransform returns transformer(Wrappee) if HasValue == true, otherwise returns an empty Optional.
+func (optional Optional[T]) AndTransform(transformer func(T) any) Optional[any] {
+	if optional.HasValue {
+		return Make(transformer(optional.Wrappee))
+	}
+
+	return Optional[any]{}
+}
+
 // Push sets a Wrappee to val value and the HasValue flag to true.
 func (optional *Optional[T]) Push(val T) {
 	optional.Wrappee = val

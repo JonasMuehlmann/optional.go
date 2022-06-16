@@ -59,6 +59,15 @@ func (optional Optional[T]) ValueOrFrom(alternative func() T) T {
 	return alternative()
 }
 
+// ValueOrCallback always returns its object's self, but calls callback if HasValue == false.
+func (optional Optional[T]) ValueOrCallback(callback func()) Optional[T] {
+	if !optional.HasValue {
+		callback()
+	}
+
+	return optional
+}
+
 // Push sets a Wrappee to val value and the HasValue flag to true.
 func (optional *Optional[T]) Push(val T) {
 	optional.Wrappee = val

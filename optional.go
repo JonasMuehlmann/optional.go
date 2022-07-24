@@ -77,7 +77,7 @@ func (optional Optional[T]) GetTransformedOrEmpty(transformer func(T) any) Optio
 	return Optional[any]{}
 }
 
-// GetTransformedOrEmpty returns transformer(Wrappee) if HasValue == true, otherwise returns an empty Optional.
+// GetTransformedOrEmpty returns transformer(Wrappee) if HasValue == true, otherwise returns self.
 func (optional Optional[T]) GetTransformedOrSelf(transformer func(T) T) Optional[T] {
 	if optional.HasValue {
 		return Make(transformer(optional.Wrappee))
@@ -86,6 +86,7 @@ func (optional Optional[T]) GetTransformedOrSelf(transformer func(T) T) Optional
 	return optional
 }
 
+// Match executes someHandler if HasValue is true and noneHandler otherwise.
 func (optional Optional[T]) Match(someHandler func(T), noneHandler func(T)) {
 	if optional.HasValue {
 		someHandler(optional.Wrappee)

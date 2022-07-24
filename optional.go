@@ -41,8 +41,8 @@ func Make[T any](wrappee T) Optional[T] {
 	return Optional[T]{Wrappee: wrappee, HasValue: true}
 }
 
-// ValueOr returns the Wrapee if the HasValue flag is true, otherwise alternative is returned.
-func (optional Optional[T]) ValueOr(alternative T) T {
+// GetOrAlternative returns the Wrapee if the HasValue flag is true, otherwise alternative is returned.
+func (optional Optional[T]) GetOrAlternative(alternative T) T {
 	if optional.HasValue {
 		return optional.Wrappee
 	}
@@ -50,8 +50,17 @@ func (optional Optional[T]) ValueOr(alternative T) T {
 	return alternative
 }
 
-// ValueOrFrom returns the Wrapee if the HasValue flag is true, otherwise the result of alternative() is returned.
-func (optional Optional[T]) ValueOrFrom(alternative func() T) T {
+// GetOrDefualt returns the Wrapee if the HasValue flag is true, otherwise T's default value is returned.
+func (optional Optional[T]) GetOrDefault(alternative T) T {
+	if optional.HasValue {
+		return optional.Wrappee
+	}
+
+	return alternative
+}
+
+// GetOrGenerate returns the Wrapee if the HasValue flag is true, otherwise the result of alternative() is returned.
+func (optional Optional[T]) GetOrGenerate(alternative func() T) T {
 	if optional.HasValue {
 		return optional.Wrappee
 	}
@@ -59,17 +68,8 @@ func (optional Optional[T]) ValueOrFrom(alternative func() T) T {
 	return alternative()
 }
 
-// ValueOrCallback always returns its object's self, but calls callback if HasValue == false.
-func (optional Optional[T]) ValueOrCallback(callback func()) Optional[T] {
-	if !optional.HasValue {
-		callback()
-	}
-
-	return optional
-}
-
-// AndTransform returns transformer(Wrappee) if HasValue == true, otherwise returns an empty Optional.
-func (optional Optional[T]) AndTransform(transformer func(T) any) Optional[any] {
+// GetTransformedOrEmpty returns transformer(Wrappee) if HasValue == true, otherwise returns an empty Optional.
+func (optional Optional[T]) GetTransformedOrEmpty(transformer func(T) any) Optional[any] {
 	if optional.HasValue {
 		return Make(transformer(optional.Wrappee))
 	}
@@ -77,23 +77,31 @@ func (optional Optional[T]) AndTransform(transformer func(T) any) Optional[any] 
 	return Optional[any]{}
 }
 
-// Transform returns f(self) if HasValue == true, otherwise returns Wrappee.
-func (optional Optional[T]) AndFrom(f func(Optional[T]) Optional[T]) Optional[T] {
+// GetTransformedOrEmpty returns transformer(Wrappee) if HasValue == true, otherwise returns an empty Optional.
+func (optional Optional[T]) GetTransformedOrSelf(transformer func(T) T) Optional[T] {
 	if optional.HasValue {
-		return f(optional)
+		return Make(transformer(optional.Wrappee))
 	}
 
 	return optional
 }
 
-// Push sets a Wrappee to val value and the HasValue flag to true.
-func (optional *Optional[T]) Push(val T) {
+func (optional Optional[T]) Match(someHandler func(T), noneHandler func(T)) {
+	if optional.HasValue {
+		someHandler(optional.Wrappee)
+	}
+
+	noneHandler(optional.Wrappee)
+}
+
+// Set sets a Wrappee to val value and the HasValue flag to true.
+func (optional *Optional[T]) Set(val T) {
 	optional.Wrappee = val
 	optional.HasValue = true
 }
 
-// Pop sets the HasValue flag to false and returns the Wrappee.
-func (optional *Optional[T]) Pop() T {
+// Unset sets the HasValue flag to false and returns the Wrappee.
+func (optional *Optional[T]) Unset() T {
 	optional.HasValue = false
 
 	return optional.Wrappee
@@ -212,7 +220,7 @@ func (optional *Optional[T]) UnmarshalCSV(val string) error {
 		return err
 	}
 
-	optional.Push(temp[0].Foo)
+	optional.Set(temp[0].Foo)
 
 	return nil
 }

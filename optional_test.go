@@ -59,9 +59,48 @@ func TestUnMarshallFromWrappee(t *testing.T) {
 	assert.Equal(t, true, targetStruct.MyOptional.HasValue)
 }
 
+func TestMarshallFromWhole(t *testing.T) {
+	j, err := json.Marshal(optional.Make(123))
+	assert.NoError(t, err)
+	assert.Equal(t, "123", string(j))
+}
+
+func TestMarshallFromWholeNoValue(t *testing.T) {
+	j, err := json.Marshal(optional.Optional[int]{})
+	assert.NoError(t, err)
+	assert.Equal(t, "null", string(j))
+}
+
+func TestMarshallFromWrappee(t *testing.T) {
+
+	targetStruct := struct {
+		Foo        string                 `json:"foo"`
+		MyOptional optional.Optional[int] `json:"my_optional,omitempty"`
+	}{
+		Foo:        "bar",
+		MyOptional: optional.Make(123),
+	}
+
+	j, err := json.Marshal(targetStruct)
+	assert.NoError(t, err)
+	assert.Equal(t, `{"foo":"bar","my_optional":123}`, string(j))
+}
+
+func TestMarshallFromWrappeeEmpty(t *testing.T) {
+	targetStruct := struct {
+		Foo        string                 `json:"foo"`
+		MyOptional optional.Optional[int] `json:"my_optional,omitempty"`
+	}{Foo: "bar"}
+
+	j, err := json.Marshal(targetStruct)
+	assert.NoError(t, err)
+	assert.Equal(t, `{"foo":"bar","my_optional":null}`, string(j))
+}
+
 // ******************************************************************//
-//                           fmt.Stringer                           //
-// ******************************************************************//.
+//                            fmt.Stringer                           //
+// ******************************************************************//
+
 func TestOptionalToStringHasValue(t *testing.T) {
 	optional := optional.Optional[int]{Wrappee: 123, HasValue: true}
 
@@ -77,8 +116,9 @@ func TestOptionalToStringHasNoValue(t *testing.T) {
 }
 
 // ******************************************************************//
-//        database.sql.Scanner and database.sql.driver.Valuer       //
-// ******************************************************************//.
+//         database.sql.Scanner and database.sql.driver.Valuer       //
+// ******************************************************************//
+
 func TestSQLScanAndValueHasValue(t *testing.T) {
 	db, err := GetDB(t)
 	assert.NoError(t, err)
@@ -114,9 +154,10 @@ func TestSQLScanAndValueHasNoValue(t *testing.T) {
 	assert.Equal(t, input.HasValue, output.HasValue)
 }
 
-//******************************************************************//
-// gocarina/gocsv.TypeUnmarshaller and gocarina/gocsv.TypeMarshaller//
-//******************************************************************//
+// ******************************************************************//
+//  gocarina/gocsv.TypeUnmarshaller and gocarina/gocsv.TypeMarshaller//
+// ******************************************************************//
+
 func TestCSVUnmarshalHasValue(t *testing.T) {
 	inputCSV := `Foo,Bar
 1,2

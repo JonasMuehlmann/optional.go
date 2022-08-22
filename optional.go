@@ -108,6 +108,18 @@ func (optional *Optional[T]) Unset() T {
 	return optional.Wrappee
 }
 
+func (optional Optional[T]) IsZero() bool {
+	return !optional.HasValue
+}
+
+func (optional Optional[T]) MarshalJSON() ([]byte, error) {
+	if !optional.HasValue {
+		return []byte("null"), nil
+	}
+
+	return json.Marshal(optional.Wrappee)
+}
+
 func (optional *Optional[T]) UnmarshalJSON(input []byte) error {
 	// Try to parse key with value of equal type as "Wrapee"
 	err := json.Unmarshal(input, &optional.Wrappee)

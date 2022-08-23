@@ -23,78 +23,66 @@ func GetDB(t *testing.T) (*sql.DB, error) {
 	return db, nil
 }
 
-func TestUnMarshallFromWhole(t *testing.T) {
-	marshaled := []byte(`{"wrapee": 123, "has_value": true}`)
-
-	var optional optional.Optional[int]
-
-	err := json.Unmarshal(marshaled, &optional)
-	assert.NoError(t, err)
-	assert.Equal(t, 123, optional.Wrappee)
-	assert.Equal(t, true, optional.HasValue)
-}
-
-func TestUnMarshallFromWholeNoValue(t *testing.T) {
-	marshaled := []byte(`{"wrapee": 123, "has_value": false}`)
-
-	var optional optional.Optional[int]
-
-	err := json.Unmarshal(marshaled, &optional)
-	assert.NoError(t, err)
-	assert.Equal(t, 123, optional.Wrappee)
-	assert.Equal(t, false, optional.HasValue)
-}
-
-func TestUnMarshallFromWrappee(t *testing.T) {
-	targetStruct := struct {
-		Foo        string                 `json:"foo"`
-		MyOptional optional.Optional[int] `json:"my_optional"`
-	}{}
-	marshaled, err := json.Marshal(map[string]any{"foo": "bar", "my_optional": 123})
-	assert.NoError(t, err)
-
-	err = json.Unmarshal(marshaled, &targetStruct)
-	assert.NoError(t, err)
-	assert.Equal(t, 123, targetStruct.MyOptional.Wrappee)
-	assert.Equal(t, true, targetStruct.MyOptional.HasValue)
+type jsonTargetStruct struct {
+	Foo        string                 `json:"foo,omitempty"`
+	MyOptional optional.Optional[int] `json:"my_optional,omitempty"`
 }
 
 func TestMarshallFromWhole(t *testing.T) {
-	j, err := json.Marshal(optional.Make(123))
+	original := optional.Make(123)
+	var new optional.Optional[int]
+
+	j, err := json.Marshal(original)
 	assert.NoError(t, err)
 	assert.Equal(t, "123", string(j))
+
+	err = json.Unmarshal(j, &new)
+	assert.NoError(t, err)
+	assert.Equal(t, original, new)
 }
 
 func TestMarshallFromWholeNoValue(t *testing.T) {
-	j, err := json.Marshal(optional.Optional[int]{})
+	original := optional.Optional[int]{}
+	var new optional.Optional[int]
+
+	j, err := json.Marshal(original)
 	assert.NoError(t, err)
 	assert.Equal(t, "null", string(j))
+
+	err = json.Unmarshal(j, &new)
+	assert.NoError(t, err)
+	assert.Equal(t, original, new)
 }
 
 func TestMarshallFromWrappee(t *testing.T) {
-
-	targetStruct := struct {
-		Foo        string                 `json:"foo"`
-		MyOptional optional.Optional[int] `json:"my_optional,omitempty"`
-	}{
+	original := jsonTargetStruct{
 		Foo:        "bar",
 		MyOptional: optional.Make(123),
 	}
 
-	j, err := json.Marshal(targetStruct)
+	var new jsonTargetStruct
+
+	j, err := json.Marshal(original)
 	assert.NoError(t, err)
 	assert.Equal(t, `{"foo":"bar","my_optional":123}`, string(j))
+
+	err = json.Unmarshal(j, &new)
+	assert.NoError(t, err)
+	assert.Equal(t, original, new)
 }
 
 func TestMarshallFromWrappeeEmpty(t *testing.T) {
-	targetStruct := struct {
-		Foo        string                 `json:"foo"`
-		MyOptional optional.Optional[int] `json:"my_optional,omitempty"`
-	}{Foo: "bar"}
+	original := jsonTargetStruct{}
 
-	j, err := json.Marshal(targetStruct)
+	var new jsonTargetStruct
+
+	j, err := json.Marshal(original)
 	assert.NoError(t, err)
-	assert.Equal(t, `{"foo":"bar","my_optional":null}`, string(j))
+	assert.Equal(t, `{"my_optional":null}`, string(j))
+
+	err = json.Unmarshal(j, &new)
+	assert.NoError(t, err)
+	assert.Equal(t, original, new)
 }
 
 // ******************************************************************//

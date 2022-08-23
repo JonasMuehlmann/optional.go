@@ -121,32 +121,34 @@ func (optional Optional[T]) MarshalJSON() ([]byte, error) {
 }
 
 func (optional *Optional[T]) UnmarshalJSON(input []byte) error {
+	if string(input) == "null" {
+		return nil
+	}
+
 	// Try to parse key with value of equal type as "Wrapee"
 	err := json.Unmarshal(input, &optional.Wrappee)
-
-	if err != nil {
-		alias := struct {
-			Wrappee  T    `json:"wrapee" db:"wrapee"`
-			HasValue bool `json:"has_value" db:"has_value"`
-		}{}
-		// Try to parse object with keys "wrapee" and "has_value"
-		err = json.Unmarshal(input, &alias)
-		if err != nil {
-			optional.HasValue = false
-
-			return err
-		}
-
-		optional.HasValue = alias.HasValue
-		optional.Wrappee = alias.Wrappee
+	if err == nil {
+		optional.HasValue = true
 
 		return nil
 	}
 
-	optional.HasValue = true
+	alias := struct {
+		Wrappee  T    `json:"wrapee" db:"wrapee"`
+		HasValue bool `json:"has_value" db:"has_value"`
+	}{}
+	// Try to parse object with keys "wrapee" and "has_value"
+	err = json.Unmarshal(input, &alias)
+	if err != nil {
+		optional.HasValue = false
+
+		return err
+	}
+
+	optional.HasValue = alias.HasValue
+	optional.Wrappee = alias.Wrappee
 
 	return nil
-
 }
 
 // Scan implements the database.sql.Scanner interface.
@@ -168,7 +170,7 @@ func (optional *Optional[T]) Scan(value any) error {
 		return nil
 	}
 
-	return fmt.Errorf("Failed to scan value of type %T into optional of type %T", value, optional.Wrappee)
+	return fmt.Errorf("failed to scan value of type %T into optional of type %T", value, optional.Wrappee)
 }
 
 // Value implements the database.sql.driver.Valuer interface.
@@ -201,7 +203,7 @@ func (optional *Optional[T]) MarshalText() (text []byte, err error) {
 
 	textMarshaler, ok := any(optional.Wrappee).(encoding.TextMarshaler)
 	if !ok {
-		return []byte{}, fmt.Errorf("Failed to marshal value of type %T, TextMarshaler interface not supported", optional.Wrappee)
+		return []byte{}, fmt.Errorf("failed to marshal value of type %T, TextMarshaler interface not supported", optional.Wrappee)
 	}
 
 	return textMarshaler.MarshalText()
@@ -211,7 +213,7 @@ func (optional *Optional[T]) MarshalText() (text []byte, err error) {
 func (optional *Optional[T]) UnmarshalText(text []byte) error {
 	textUnarshaler, ok := any(optional.Wrappee).(encoding.TextUnmarshaler)
 	if !ok {
-		return fmt.Errorf(`Failed to unmarshal value "%v" into optional of type %T, wrappee does not support TextUnmarshaler interface`, text, optional.Wrappee)
+		return fmt.Errorf(`failed to unmarshal value "%v" into optional of type %T, wrappee does not support TextUnmarshaler interface`, text, optional.Wrappee)
 	}
 
 	return textUnarshaler.UnmarshalText(text)

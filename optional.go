@@ -121,6 +121,18 @@ func (optional Optional[T]) IsNone() bool {
 	return !optional.hasValue
 }
 
+func (optional Optional[T]) AssertSome() {
+	if optional.IsNone() {
+		panic("optional is empty")
+	}
+}
+
+func (optional Optional[T]) AssertNone() {
+	if optional.IsSome() {
+		panic("optional is not empty")
+	}
+}
+
 func (optional Optional[T]) MarshalJSON() ([]byte, error) {
 	if !optional.hasValue {
 		return []byte("null"), nil

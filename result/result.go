@@ -76,7 +76,7 @@ func (result Result[T]) Match(okHandler func(T), errHandler func(error)) {
 	result.choice.Match(okHandler, errHandler)
 }
 
-func (result Result[T]) FromTry(f func() Result[T]) Result[T] {
+func (result Result[T]) FromTryR(f func() Result[T]) Result[T] {
 	if result.IsErr() {
 		return result
 	}

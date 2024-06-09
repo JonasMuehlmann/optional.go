@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/JonasMuehlmann/optional.go/optional"
+	"github.com/JonasMuehlmann/optional.go/v3/optional"
 	"testing"
 
 	"github.com/gocarina/gocsv"

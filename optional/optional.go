@@ -26,6 +26,7 @@ import (
 	"encoding"
 	"encoding/json"
 	"fmt"
+	"github.com/JonasMuehlmann/optional.go/result"
 
 	"github.com/gocarina/gocsv"
 )
@@ -54,8 +55,8 @@ func (optional Optional[T]) MustGet() T {
 
 }
 
-// GetOrAlt returns the Wrapee if the hasValue flag is true, otherwise alternative is returned.
-func (optional Optional[T]) GetOrAlt(alternative T) T {
+// GetElseAlt returns the Wrapee if the hasValue flag is true, otherwise alternative is returned.
+func (optional Optional[T]) GetElseAlt(alternative T) T {
 	if optional.IsSome() {
 		return optional.wrappee
 	}
@@ -64,7 +65,7 @@ func (optional Optional[T]) GetOrAlt(alternative T) T {
 }
 
 // GetOrDefualt returns the Wrapee if the hasValue flag is true, otherwise T's default value is returned.
-func (optional Optional[T]) GetOrDefault() T {
+func (optional Optional[T]) GetElseDefault() T {
 	if optional.IsSome() {
 		return optional.wrappee
 	}
@@ -74,16 +75,25 @@ func (optional Optional[T]) GetOrDefault() T {
 	return t
 }
 
-// GetOrFrom returns the Wrapee if the hasValue flag is true, otherwise the result of alternative() is returned.
-func (optional Optional[T]) GetOrFrom(alternative func() T) Optional[T] {
+// GetElseFrom returns the Wrapee if the hasValue flag is true, otherwise the result of alternative() is returned.
+func (optional Optional[T]) GetElseFrom(alternative func() T) Optional[T] {
 	if optional.IsSome() {
 		return Some(alternative())
 	}
 	return None[T]()
 }
 
+func (optional Optional[T]) TryGetElseFrom(alternative func() (T, error)) result.Result[T] {
+	if optional.IsSome() {
+		return result.Ok(optional.MustGet())
+	}
+
+	return result.ToResult(alternative())
+
+}
+
 // GetTransformedOrEmpty returns transformer(wrappee) if hasValue == true, otherwise returns self.
-func (optional Optional[T]) GetTransformedOrNone(transformer func(T) T) Optional[T] {
+func (optional Optional[T]) GetTransformedElseNone(transformer func(T) T) Optional[T] {
 	if optional.IsSome() {
 		return Some(transformer(optional.wrappee))
 	}

@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/JonasMuehlmann/optional.go/optional"
 	"testing"
 
-	"github.com/JonasMuehlmann/optional.go"
 	"github.com/gocarina/gocsv"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"

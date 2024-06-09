@@ -76,7 +76,7 @@ func (result Result[T]) Match(okHandler func(T), errHandler func(error)) {
 	result.choice.Match(okHandler, errHandler)
 }
 
-func (result Result[T]) Try(f func() Result[T]) Result[T] {
+func (result Result[T]) FromTry(f func() Result[T]) Result[T] {
 	if result.IsErr() {
 		return result
 	}
@@ -84,7 +84,7 @@ func (result Result[T]) Try(f func() Result[T]) Result[T] {
 	return f()
 }
 
-func (result Result[T]) TryT(f func() (T, error)) Result[T] {
+func (result Result[T]) FromTryT(f func() (T, error)) Result[T] {
 	if result.IsErr() {
 		return result
 	}
@@ -93,7 +93,7 @@ func (result Result[T]) TryT(f func() (T, error)) Result[T] {
 	return FromTuple(value, err)
 }
 
-func (result Result[T]) TryE(f func() error) Result[T] {
+func (result Result[T]) FromTryE(f func() error) Result[T] {
 	if result.IsErr() {
 		return result
 	}

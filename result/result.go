@@ -100,3 +100,12 @@ func (result Result[T]) FromTryE(f func() error) Result[T] {
 
 	return FromError[T](f())
 }
+func (result Result[T]) FromTry(f func()) Result[T] {
+	if result.IsErr() {
+		return result
+	}
+
+	f()
+
+	return result
+}

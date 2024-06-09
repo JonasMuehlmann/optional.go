@@ -22,6 +22,15 @@ func FromTuple[T any](value T, err error) Result[T] {
 	return Ok[T](value)
 }
 
+func FromError[T any](err error) Result[T] {
+	if err != nil {
+		return Err[T](err)
+	}
+
+	var t T
+	return Ok[T](t)
+}
+
 func ToTuple[T any](result Result[T]) (T, error) {
 	if result.IsOk() {
 		return result.MustGetOk(), nil

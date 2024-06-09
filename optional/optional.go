@@ -26,7 +26,7 @@ import (
 	"encoding"
 	"encoding/json"
 	"fmt"
-	"github.com/JonasMuehlmann/optional.go/result"
+	"github.com/JonasMuehlmann/optional.go/v3/result"
 
 	"github.com/gocarina/gocsv"
 )
@@ -83,12 +83,21 @@ func (optional Optional[T]) GetElseFrom(alternative func() T) Optional[T] {
 	return None[T]()
 }
 
-func (optional Optional[T]) TryGetElseFrom(alternative func() (T, error)) result.Result[T] {
+func (optional Optional[T]) TryGetElseFromT(alternative func() (T, error)) result.Result[T] {
 	if optional.IsSome() {
 		return result.Ok(optional.MustGet())
 	}
 
 	return result.ToResult(alternative())
+
+}
+
+func (optional Optional[T]) TryGetElseFrom(alternative func() result.Result[T]) result.Result[T] {
+	if optional.IsSome() {
+		return result.Ok(optional.MustGet())
+	}
+
+	return alternative()
 
 }
 

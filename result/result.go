@@ -76,13 +76,12 @@ func (result Result[T]) Match(okHandler func(T), errHandler func(error)) {
 	result.choice.Match(okHandler, errHandler)
 }
 
-func (result Result[T]) Try(f func() (T, error)) Result[T] {
+func (result Result[T]) Try(f func() Result[T]) Result[T] {
 	if result.IsErr() {
 		return result
 	}
 
-	value, err := f()
-	return ToResult(value, err)
+	return f()
 }
 
 func (result Result[T]) TryT(f func() (T, error)) Result[T] {

@@ -1,4 +1,4 @@
-module github.com/JonasMuehlmann/optional.go
+module github.com/JonasMuehlmann/optional.go/v3
 
 go 1.18
 

@@ -32,92 +32,101 @@ import (
 
 // Optional holds a Wrappe and a flag indicating the existence or abscence of the Wrapee.
 type Optional[T any] struct {
-	Wrappee  T    `json:"wrapee" db:"wrapee"`
-	HasValue bool `json:"has_value" db:"has_value"`
+	wrappee  T    `json:"wrapee" db:"wrapee"`
+	hasValue bool `json:"has_value" db:"has_value"`
 }
 
-// Make creates an optional holding the specified wrappee and sets the HasValue flag to true.
-func Make[T any](wrappee T) Optional[T] {
-	return Optional[T]{Wrappee: wrappee, HasValue: true}
+// Some creates an optional holding the specified wrappee and sets the hasValue flag to true.
+func Some[T any](wrappee T) Optional[T] {
+	return Optional[T]{wrappee: wrappee, hasValue: true}
 }
 
-// GetOrAlternative returns the Wrapee if the HasValue flag is true, otherwise alternative is returned.
-func (optional Optional[T]) GetOrAlternative(alternative T) T {
-	if optional.HasValue {
-		return optional.Wrappee
+// None creates an optional holding the specified wrappee and sets the hasValue flag to false.
+func None[T any]() Optional[T] {
+	return Optional[T]{hasValue: false}
+}
+
+func (optional Optional[T]) MustGet() T {
+	if optional.IsNone() {
+		panic("optional is empty")
+	}
+	return optional.wrappee
+
+}
+
+// GetOrAlt returns the Wrapee if the hasValue flag is true, otherwise alternative is returned.
+func (optional Optional[T]) GetOrAlt(alternative T) T {
+	if optional.IsSome() {
+		return optional.wrappee
 	}
 
 	return alternative
 }
 
-// GetOrDefualt returns the Wrapee if the HasValue flag is true, otherwise T's default value is returned.
-func (optional Optional[T]) GetOrDefault(alternative T) T {
-	if optional.HasValue {
-		return optional.Wrappee
+// GetOrDefualt returns the Wrapee if the hasValue flag is true, otherwise T's default value is returned.
+func (optional Optional[T]) GetOrDefault() T {
+	if optional.IsSome() {
+		return optional.wrappee
 	}
 
-	return alternative
+	var t T
+
+	return t
 }
 
-// GetOrGenerate returns the Wrapee if the HasValue flag is true, otherwise the result of alternative() is returned.
-func (optional Optional[T]) GetOrGenerate(alternative func() T) T {
-	if optional.HasValue {
-		return optional.Wrappee
+// GetOrFrom returns the Wrapee if the hasValue flag is true, otherwise the result of alternative() is returned.
+func (optional Optional[T]) GetOrFrom(alternative func() T) Optional[T] {
+	if optional.IsSome() {
+		return Some(alternative())
+	}
+	return None[T]()
+}
+
+// GetTransformedOrEmpty returns transformer(wrappee) if hasValue == true, otherwise returns self.
+func (optional Optional[T]) GetTransformedOrNone(transformer func(T) T) Optional[T] {
+	if optional.IsSome() {
+		return Some(transformer(optional.wrappee))
 	}
 
-	return alternative()
+	return None[T]()
 }
 
-// GetTransformedOrEmpty returns transformer(Wrappee) if HasValue == true, otherwise returns an empty Optional.
-func (optional Optional[T]) GetTransformedOrEmpty(transformer func(T) any) Optional[any] {
-	if optional.HasValue {
-		return Make(transformer(optional.Wrappee))
-	}
-
-	return Optional[any]{}
-}
-
-// GetTransformedOrEmpty returns transformer(Wrappee) if HasValue == true, otherwise returns self.
-func (optional Optional[T]) GetTransformedOrSelf(transformer func(T) T) Optional[T] {
-	if optional.HasValue {
-		return Make(transformer(optional.Wrappee))
-	}
-
-	return optional
-}
-
-// Match executes someHandler if HasValue is true and noneHandler otherwise.
+// Match executes someHandler if hasValue is true and noneHandler otherwise.
 func (optional Optional[T]) Match(someHandler func(T), noneHandler func(T)) {
-	if optional.HasValue {
-		someHandler(optional.Wrappee)
+	if optional.IsSome() {
+		someHandler(optional.wrappee)
+	} else {
+		noneHandler(optional.wrappee)
 	}
-
-	noneHandler(optional.Wrappee)
 }
 
-// Set sets a Wrappee to val value and the HasValue flag to true.
+// Set sets a wrappee to val value and the hasValue flag to true.
 func (optional *Optional[T]) Set(val T) {
-	optional.Wrappee = val
-	optional.HasValue = true
+	optional.wrappee = val
+	optional.hasValue = true
 }
 
-// Unset sets the HasValue flag to false and returns the Wrappee.
+// Unset sets the hasValue flag to false and returns the wrappee.
 func (optional *Optional[T]) Unset() T {
-	optional.HasValue = false
+	optional.hasValue = false
 
-	return optional.Wrappee
+	return optional.wrappee
 }
 
-func (optional Optional[T]) IsZero() bool {
-	return !optional.HasValue
+func (optional Optional[T]) IsSome() bool {
+	return optional.hasValue
+}
+
+func (optional Optional[T]) IsNone() bool {
+	return !optional.hasValue
 }
 
 func (optional Optional[T]) MarshalJSON() ([]byte, error) {
-	if !optional.HasValue {
+	if !optional.hasValue {
 		return []byte("null"), nil
 	}
 
-	return json.Marshal(optional.Wrappee)
+	return json.Marshal(optional.wrappee)
 }
 
 func (optional *Optional[T]) UnmarshalJSON(input []byte) error {
@@ -126,9 +135,9 @@ func (optional *Optional[T]) UnmarshalJSON(input []byte) error {
 	}
 
 	// Try to parse key with value of equal type as "Wrapee"
-	err := json.Unmarshal(input, &optional.Wrappee)
+	err := json.Unmarshal(input, &optional.wrappee)
 	if err == nil {
-		optional.HasValue = true
+		optional.hasValue = true
 
 		return nil
 	}
@@ -140,13 +149,13 @@ func (optional *Optional[T]) UnmarshalJSON(input []byte) error {
 	// Try to parse object with keys "wrapee" and "has_value"
 	err = json.Unmarshal(input, &alias)
 	if err != nil {
-		optional.HasValue = false
+		optional.hasValue = false
 
 		return err
 	}
 
-	optional.HasValue = alias.HasValue
-	optional.Wrappee = alias.Wrappee
+	optional.hasValue = alias.HasValue
+	optional.wrappee = alias.Wrappee
 
 	return nil
 }
@@ -156,31 +165,31 @@ func (optional *Optional[T]) Scan(value any) error {
 	if value == nil {
 		var zero T
 
-		optional.HasValue = false
-		optional.Wrappee = zero
+		optional.hasValue = false
+		optional.wrappee = zero
 
 		return nil
 	}
 
 	switch t := value.(type) {
 	case T:
-		optional.HasValue = true
-		optional.Wrappee = t
+		optional.hasValue = true
+		optional.wrappee = t
 
 		return nil
 	}
 
-	return fmt.Errorf("failed to scan value of type %T into optional of type %T", value, optional.Wrappee)
+	return fmt.Errorf("failed to scan value of type %T into optional of type %T", value, optional.wrappee)
 }
 
 // Value implements the database.sql.driver.Valuer interface.
 func (optional Optional[T]) Value() (driver.Value, error) {
-	if !optional.HasValue {
+	if !optional.hasValue {
 		return nil, nil
 	}
 
-	if driver.IsValue(optional.Wrappee) {
-		return optional.Wrappee, nil
+	if driver.IsValue(optional.wrappee) {
+		return optional.wrappee, nil
 	}
 
 	return nil, nil
@@ -188,8 +197,8 @@ func (optional Optional[T]) Value() (driver.Value, error) {
 
 // String implements the fmt.Stringer interface.
 func (optional Optional[T]) String() string {
-	if optional.HasValue {
-		return fmt.Sprint(optional.Wrappee)
+	if optional.hasValue {
+		return fmt.Sprint(optional.wrappee)
 	}
 
 	return "empty optional"
@@ -197,13 +206,13 @@ func (optional Optional[T]) String() string {
 
 // MarshalText implements the encoding.TextMarshaller interface.
 func (optional *Optional[T]) MarshalText() (text []byte, err error) {
-	if !optional.HasValue {
+	if !optional.hasValue {
 		return []byte{}, nil
 	}
 
-	textMarshaler, ok := any(optional.Wrappee).(encoding.TextMarshaler)
+	textMarshaler, ok := any(optional.wrappee).(encoding.TextMarshaler)
 	if !ok {
-		return []byte{}, fmt.Errorf("failed to marshal value of type %T, TextMarshaler interface not supported", optional.Wrappee)
+		return []byte{}, fmt.Errorf("failed to marshal value of type %T, TextMarshaler interface not supported", optional.wrappee)
 	}
 
 	return textMarshaler.MarshalText()
@@ -211,9 +220,9 @@ func (optional *Optional[T]) MarshalText() (text []byte, err error) {
 
 // UnmarshalText implements the encoding.TextUnmarshaller interface.
 func (optional *Optional[T]) UnmarshalText(text []byte) error {
-	textUnarshaler, ok := any(optional.Wrappee).(encoding.TextUnmarshaler)
+	textUnarshaler, ok := any(optional.wrappee).(encoding.TextUnmarshaler)
 	if !ok {
-		return fmt.Errorf(`failed to unmarshal value "%v" into optional of type %T, wrappee does not support TextUnmarshaler interface`, text, optional.Wrappee)
+		return fmt.Errorf(`failed to unmarshal value "%v" into optional of type %T, wrappee does not support TextUnmarshaler interface`, text, optional.wrappee)
 	}
 
 	return textUnarshaler.UnmarshalText(text)
@@ -222,7 +231,7 @@ func (optional *Optional[T]) UnmarshalText(text []byte) error {
 // UnmarshalCSV implements the gocarina/gocsv.TypeUnmarshaller interface.
 func (optional *Optional[T]) UnmarshalCSV(val string) error {
 	if val == "" {
-		optional.HasValue = false
+		optional.hasValue = false
 
 		return nil
 	}
@@ -242,19 +251,19 @@ func (optional *Optional[T]) UnmarshalCSV(val string) error {
 
 // MarshalCSV implements the gocarina/gocsv.TypeMarshaller interface.
 func (optional Optional[T]) MarshalCSV() (string, error) {
-	// csvMarshaler, ok := any(optional.Wrappee).(gocsv.TypeMarshaller)
+	// csvMarshaler, ok := any(optional.wrappee).(gocsv.TypeMarshaller)
 	// if !ok {
-	// 	return "", fmt.Errorf(`Failed to marshal value of type %T, wrappee does not support TypeMarshaller interface`, optional.Wrappee)
+	// 	return "", fmt.Errorf(`Failed to marshal value of type %T, wrappee does not support TypeMarshaller interface`, optional.wrappee)
 	// }
 
 	// return csvMarshaler.MarshalCSV()
 
 	// Dirty Hack
-	if !optional.HasValue {
+	if !optional.hasValue {
 		return "", nil
 	}
 
-	temp := []struct{ Foo T }{{optional.Wrappee}}
+	temp := []struct{ Foo T }{{optional.wrappee}}
 
 	out, err := gocsv.MarshalString(temp)
 	if err != nil {

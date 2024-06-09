@@ -29,7 +29,7 @@ type jsonTargetStruct struct {
 }
 
 func TestMarshallFromWhole(t *testing.T) {
-	original := optional.Make(123)
+	original := optional.Some(123)
 	var new optional.Optional[int]
 
 	j, err := json.Marshal(original)
@@ -57,7 +57,7 @@ func TestMarshallFromWholeNoValue(t *testing.T) {
 func TestMarshallFromWrappee(t *testing.T) {
 	original := jsonTargetStruct{
 		Foo:        "bar",
-		MyOptional: optional.Make(123),
+		MyOptional: optional.Some(123),
 	}
 
 	var new jsonTargetStruct
@@ -90,14 +90,14 @@ func TestMarshallFromWrappeeEmpty(t *testing.T) {
 // ******************************************************************//
 
 func TestOptionalToStringHasValue(t *testing.T) {
-	optional := optional.Optional[int]{Wrappee: 123, HasValue: true}
+	optional := optional.Some(123)
 
 	stringified := fmt.Sprint(optional)
 	assert.Equal(t, "123", stringified)
 }
 
 func TestOptionalToStringHasNoValue(t *testing.T) {
-	optional := optional.Optional[int]{Wrappee: 123, HasValue: false}
+	optional := optional.None[int]()
 
 	stringified := fmt.Sprint(optional)
 	assert.Equal(t, "empty optional", stringified)
@@ -114,7 +114,7 @@ func TestSQLScanAndValueHasValue(t *testing.T) {
 	_, err = db.Exec("CREATE TABLE FOO(BAR TEXT)")
 	assert.NoError(t, err)
 
-	input := optional.Optional[string]{Wrappee: "bar", HasValue: true}
+	input := optional.Some("bar")
 	_, err = db.Exec("INSERT INTO FOO VALUES(?)", input)
 	assert.NoError(t, err)
 
@@ -131,15 +131,15 @@ func TestSQLScanAndValueHasNoValue(t *testing.T) {
 	_, err = db.Exec("CREATE TABLE FOO(BAR TEXT)")
 	assert.NoError(t, err)
 
-	input := optional.Optional[string]{Wrappee: "bar", HasValue: false}
+	input := optional.None[string]()
 	_, err = db.Exec("INSERT INTO FOO VALUES(?)", input)
 	assert.NoError(t, err)
 
 	var output optional.Optional[string]
 	err = db.QueryRow("SELECT * FROM Foo").Scan(&output)
 	assert.NoError(t, err)
-	// If HasValue is false, we don't care about the Wrappee
-	assert.Equal(t, input.HasValue, output.HasValue)
+	// If hasValue is false, we don't care about the wrappee
+	assert.Equal(t, input.IsSome(), output.IsSome())
 }
 
 // ******************************************************************//
@@ -159,11 +159,11 @@ func TestCSVUnmarshalHasValue(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, outputStructs, 1)
 
-	assert.True(t, outputStructs[0].Foo.HasValue)
-	assert.True(t, outputStructs[0].Bar.HasValue)
+	assert.True(t, outputStructs[0].Foo.IsSome())
+	assert.True(t, outputStructs[0].Bar.IsSome())
 
-	assert.Equal(t, 1, outputStructs[0].Foo.Wrappee)
-	assert.Equal(t, 2, outputStructs[0].Bar.Wrappee)
+	assert.Equal(t, 1, outputStructs[0].Foo.MustGet())
+	assert.Equal(t, 2, outputStructs[0].Bar.MustGet())
 }
 
 func TestCSVUnmarshalHasNoValue(t *testing.T) {
@@ -179,8 +179,8 @@ func TestCSVUnmarshalHasNoValue(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, outputStructs, 1)
 
-	assert.False(t, outputStructs[0].Foo.HasValue)
-	assert.False(t, outputStructs[0].Bar.HasValue)
+	assert.False(t, outputStructs[0].Foo.IsSome())
+	assert.False(t, outputStructs[0].Bar.IsSome())
 }
 
 func TestCSVMarshalHasValue(t *testing.T) {
@@ -192,8 +192,8 @@ func TestCSVMarshalHasValue(t *testing.T) {
 		Bar optional.Optional[int] `csv:"Bar"`
 	}{
 		{
-			Foo: optional.Make(1),
-			Bar: optional.Make(2),
+			Foo: optional.Some(1),
+			Bar: optional.Some(2),
 		},
 	}
 

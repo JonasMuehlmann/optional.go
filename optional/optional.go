@@ -88,7 +88,7 @@ func (optional Optional[T]) TryGetElseFromT(alternative func() (T, error)) resul
 		return result.Ok(optional.MustGet())
 	}
 
-	return result.ToResult(alternative())
+	return result.FromTuple(alternative())
 
 }
 

@@ -1,6 +1,6 @@
 package result
 
-import "github.com/JonasMuehlmann/optional.go/choice"
+import "github.com/JonasMuehlmann/optional.go/v3/choice"
 
 type Result[T any] struct {
 	choice choice.Choice[T, error]
@@ -14,7 +14,7 @@ func Err[T any](value error) Result[T] {
 	return Result[T]{choice: choice.Or[T, error](value)}
 }
 
-func ToResult[T any](value T, err error) Result[T] {
+func FromTuple[T any](value T, err error) Result[T] {
 	if err != nil {
 		return Err[T](err)
 	}
@@ -82,5 +82,5 @@ func (result Result[T]) TryT(f func() (T, error)) Result[T] {
 	}
 
 	value, err := f()
-	return ToResult(value, err)
+	return FromTuple(value, err)
 }

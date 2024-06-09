@@ -93,3 +93,11 @@ func (result Result[T]) TryT(f func() (T, error)) Result[T] {
 	value, err := f()
 	return FromTuple(value, err)
 }
+
+func (result Result[T]) TryE(f func() error) Result[T] {
+	if result.IsErr() {
+		return result
+	}
+
+	return FromError[T](f())
+}

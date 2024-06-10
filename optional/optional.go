@@ -110,6 +110,16 @@ func (optional Optional[T]) GetTransformedElseNone(transformer func(T) T) Option
 	return None[T]()
 }
 
+func (optional Optional[T]) TryDo(f func()) Optional[T] {
+	if optional.IsNone() {
+		return optional
+	}
+
+	f()
+
+	return optional
+}
+
 // Match executes someHandler if hasValue is true and noneHandler otherwise.
 func (optional Optional[T]) Match(someHandler func(T), noneHandler func(T)) {
 	if optional.IsSome() {

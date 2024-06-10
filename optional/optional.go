@@ -55,6 +55,14 @@ func FromT[T any](t T, ok bool) Optional[T] {
 	return None[T]()
 }
 
+func FromP[T any](t *T) Optional[T] {
+	if t != nil {
+		return Some(*t)
+	}
+
+	return None[T]()
+}
+
 func (optional Optional[T]) MustGet() T {
 	if optional.IsNone() {
 		panic("optional is empty")
